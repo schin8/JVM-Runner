@@ -1,0 +1,45 @@
+name: Test JVM Runner
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build base image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        load: true
+        tags: jvm-runner:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+      
+    - name: Test Java project
+      run: |
+        cd tests/java
+        echo "Building Java test image..."
+        docker build -t java-test .
+        echo "Running Java container..."
+        docker run --rm java-test
+      
+    - name: Test Kotlin project
+      run: |
+        cd tests/kotlin
+        echo "Building Kotlin test image..."
+        docker build -t kotlin-test .
+        echo "Running Kotlin container..."
+        docker run --rm kotlin-test
